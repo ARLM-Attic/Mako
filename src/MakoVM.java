@@ -225,13 +225,14 @@ public class MakoVM implements MakoConstants {
 
 	public void sync() {
 		if (m[RV] == 0) {
-			for (int y = 0; y < 240; ++y) {
+			for(int y = 0; y < 240; ++y) {
 				drawRow(y);
 			}
-		} else {
+		}
+		else {
 			rpush(m[PC]);
 			m[PC] = m[RV];
-			for (int y = 0; y < 240; ++y) {
+			for(int y = 0; y < 240; ++y) {
 				while(m[PC] != -1 && m[m[PC]] != OP_SYNC) { tick(); }
 				if (m[PC] != -1) { ++m[PC]; }
 				drawRow(y);

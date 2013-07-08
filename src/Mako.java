@@ -58,7 +58,7 @@ public class Mako {
 			long start = System.currentTimeMillis();
 
 			view.ticks[view.tickptr] = 0;
-			while(view.vm.m[MakoConstants.PC] != - 1 && view.vm.m[view.vm.m[MakoConstants.PC]] != MakoConstants.OP_SYNC) {
+			while(view.vm.m[MakoConstants.PC] != -1 && view.vm.m[view.vm.m[MakoConstants.PC]] != MakoConstants.OP_SYNC) {
 				view.ticks[view.tickptr]++;
 
 				if (trace) {
