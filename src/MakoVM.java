@@ -172,25 +172,26 @@ public class MakoVM implements MakoConstants {
 		}
 	}
 
-	/*
-	private void drawSprite(int tile, int status, int px, int py) {
-		// skip it if it's not within this raster?
+	private void drawSprite(int scanline, int tile, int status, int offset_x, int offset_y) {
+		if ((status & 1) == 0) { return; }
 
-		if (status % 2 == 0) { return; }
-		final int w = (((status & 0x0F00) >>  8) + 1) * 8;
 		final int h = (((status & 0xF000) >> 12) + 1) * 8;
-		int xd = 1; int x0 = 0; int x1 = w;
-		int yd = 1; int y0 = 0; int y1 = h;
-		if ((status & H_MIRROR_MASK) != 0) { xd = -1; x0 = w - 1; x1 = -1; }
-		if ((status & V_MIRROR_MASK) != 0) { yd = -1; y0 = h - 1; y1 = -1; }
-		int i = m[ST] + (tile * w * h);
-		for(int y = y0; y != y1; y += yd) {
-			for(int x = x0; x != x1; x += xd) {
-				drawPixel(x+px, y+py, m[i++]);
-			}
+		int spr_y = scanline + m[SY] - offset_y;
+		if (spr_y < 0 || spr_y >= h) { return; }
+
+		final int w = (((status & 0x0F00) >>  8) + 1) * 8;
+		final int spr_x = offset_x - m[SX];
+
+		if ((status & V_MIRROR_MASK) != 0) { spr_y = h - spr_y - 1; }
+
+		int i = m[ST] + (tile * w * h) + (spr_y * w);
+		if ((status & H_MIRROR_MASK) == 0) {
+			for(int x = spr_x; x < spr_x + w; ++x) { drawPixel(x, scanline, m[i++]); }
+		}
+		else {
+			for(int x = spr_x + w - 1; x >= spr_x; --x) { drawPixel(x, scanline, m[i++]); }
 		}
 	}
-	*/
 
 	private void drawGrid(boolean hiz, int y) {
 		final int grid_y = y + m[SY];
@@ -216,7 +217,7 @@ public class MakoVM implements MakoConstants {
 			final int tile   = m[base + 1];
 			final int px     = m[base + 2];
 			final int py     = m[base + 3];
-			//drawSprite(y, tile, status, px - m[SX], py - m[SY]);
+			drawSprite(y, tile, status, px, py);
 			base += 4;
 		}
 
