@@ -58,7 +58,7 @@ public class Mako {
 			long start = System.currentTimeMillis();
 
 			view.ticks[view.tickptr] = 0;
-			while(view.vm.m[view.vm.m[MakoConstants.PC]] != MakoConstants.OP_SYNC) {
+			while(view.vm.m[MakoConstants.PC] != - 1 && view.vm.m[view.vm.m[MakoConstants.PC]] != MakoConstants.OP_SYNC) {
 				view.ticks[view.tickptr]++;
 
 				if (trace) {
@@ -123,14 +123,15 @@ public class Mako {
 						throw new Error("Guard violation.");
 					}
 				}
-
-				if (view.vm.m[MakoConstants.PC] == -1) {
-					if (trace) { printTrace(traceCalls, traceCycles); }
-					System.exit(0);
-				}
 			}
-			view.vm.sync();
+
+			if (view.vm.m[MakoConstants.PC] == -1) {
+				if (trace) { printTrace(traceCalls, traceCycles); }
+				System.exit(0);
+			}
+
 			view.vm.m[MakoConstants.PC]++;
+			view.vm.sync();
 			view.tickptr = (view.tickptr + 1) % view.ticks.length;
 			
 			view.vm.keys = view.keys;

@@ -39,12 +39,12 @@ public class MakoVM implements MakoConstants {
 	private int mod(int a, int b) { a %= b; return a < 0 ? a+b : a; }
 
 	public void run() {
-		while(m[m[PC]] != OP_SYNC) {
+		while(m[PC] != -1 && m[m[PC]] != OP_SYNC) {
 			tick();
-			if (m[PC] == -1) { System.exit(0); }
 		}
-		sync();
+		if (m[PC] == -1) { System.exit(0); }
 		m[PC]++;
+		sync();
 	}
 
 	public void tick() {
@@ -165,21 +165,20 @@ public class MakoVM implements MakoConstants {
 		p[x + (y * 320)] = c;
 	}
 
-	private void drawTile(int tile, int px, int py) {
-		tile &= ~GRID_Z_MASK;
-		if (tile < 0) { return; }
-		int i = m[GT] + (tile * 8 * 8);
-		for(int y = 0; y < 8; y++) {
-			for(int x = 0; x < 8; x++) {
-				drawPixel(x+px, y+py, m[i++]);
-			}
+	private void drawTile(int scanline, int x_offset, int tile_id, int tile_line) {
+		int i = m[GT] + (tile_id * 8 * 8) + (tile_line * 8);
+		for(int x = 0; x < 8; x++) {
+			drawPixel(x_offset + x, scanline, m[i++]);
 		}
 	}
 
+	/*
 	private void drawSprite(int tile, int status, int px, int py) {
+		// skip it if it's not within this raster?
+
 		if (status % 2 == 0) { return; }
-		final int w = (((status & 0x0F00) >>  8) + 1) << 3;
-		final int h = (((status & 0xF000) >> 12) + 1) << 3;
+		final int w = (((status & 0x0F00) >>  8) + 1) * 8;
+		final int h = (((status & 0xF000) >> 12) + 1) * 8;
 		int xd = 1; int x0 = 0; int x1 = w;
 		int yd = 1; int y0 = 0; int y1 = h;
 		if ((status & H_MIRROR_MASK) != 0) { xd = -1; x0 = w - 1; x1 = -1; }
@@ -191,32 +190,53 @@ public class MakoVM implements MakoConstants {
 			}
 		}
 	}
+	*/
 
-	private void drawGrid(boolean hiz, int scrollx, int scrolly) {
-		int i = m[GP];
-		for(int y = 0; y < 31; y++) {
-			for(int x = 0; x < 41; x++) {
-				if (!hiz && (m[i] & GRID_Z_MASK) != 0) { i++; continue; }
-				if ( hiz && (m[i] & GRID_Z_MASK) == 0) { i++; continue; }
-				drawTile(m[i++], x*8 - scrollx, y*8 - scrolly);
+	private void drawGrid(boolean hiz, int y) {
+		final int grid_y = y + m[SY];
+		if (grid_y < 0 || grid_y >= 31*8) { return; }
+		final int tile_y = grid_y % 8;
+		final int grid_ptr = m[GP] + (grid_y / 8) * (41 + m[GS]);
+
+		for(int x = 0; x < 41; x++) {
+			final int tile_id = m[grid_ptr + x];
+			if (tile_id >= 0 && hiz == ((tile_id & GRID_Z_MASK) != 0)) {
+				drawTile(y, x*8 - m[SX], tile_id & ~GRID_Z_MASK, tile_y);
 			}
-			i += m[GS];
 		}
 	}
 
-	public void sync() {
-		final int scrollx = m[SX];
-		final int scrolly = m[SY];
-		java.util.Arrays.fill(p, m[CL]);
-		drawGrid(false, scrollx, scrolly);
-		for(int sprite = 0; sprite < 1024; sprite += 4) {
-			final int status = m[m[SP] + sprite    ];
-			final int tile   = m[m[SP] + sprite + 1];
-			final int px     = m[m[SP] + sprite + 2];
-			final int py     = m[m[SP] + sprite + 3];
-			drawSprite(tile, status, px - scrollx, py - scrolly);
+	public void drawRow(int y) {
+		for(int x = 0; x < 320; x++) { p[x + (y * 320)] = m[CL]; }
+		drawGrid(false, y);
+
+		int base = m[SP];
+		for(int sprite = 0; sprite < 256; ++sprite) {
+			final int status = m[base + 0];
+			final int tile   = m[base + 1];
+			final int px     = m[base + 2];
+			final int py     = m[base + 3];
+			//drawSprite(y, tile, status, px - m[SX], py - m[SY]);
+			base += 4;
 		}
-		drawGrid(true, scrollx, scrolly);
+
+		drawGrid(true, y);
+	}
+
+	public void sync() {
+		if (m[RV] == 0) {
+			for (int y = 0; y < 240; ++y) {
+				drawRow(y);
+			}
+		} else {
+			rpush(m[PC]);
+			m[PC] = m[RV];
+			for (int y = 0; y < 240; ++y) {
+				while(m[PC] != -1 && m[m[PC]] != OP_SYNC) { tick(); }
+				if (m[PC] != -1) { ++m[PC]; }
+				drawRow(y);
+			}
+		}
 
 		if (soundLine != null && apointer > 0) {
 			soundLine.write(abuffer, 0, apointer);

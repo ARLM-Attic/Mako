@@ -158,6 +158,7 @@ public class Maker implements MakoConstants {
 		defineVariable("XO", XO);
 		defineVariable("XA", XA);
 		defineVariable("XS", XS);
+		defineVariable("RV", RV);
 	}
 
 	public MakoRom compile(String filename) {

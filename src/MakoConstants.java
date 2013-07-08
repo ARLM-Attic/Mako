@@ -53,7 +53,9 @@ public interface MakoConstants {
 	public static final int XA = 17; // external argument 
 	public static final int XS = 18; // external status
 
-	public static final int RESERVED_HEADER = 19;
+	public static final int RV = 19; // raster vector
+
+	public static final int RESERVED_HEADER = 20;
 
 	public static final int H_MIRROR_MASK = 0x10000; // sprite is mirrored horizontally?
 	public static final int V_MIRROR_MASK = 0x20000; // sprite is mirrored vertically?

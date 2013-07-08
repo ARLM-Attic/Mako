@@ -26,8 +26,36 @@
 :const player 0
 :const speed  2
 
-: main
+: add@ ( x addr -- )
+	dup @ rot + swap !
+;
+
+: sub@ ( x addr -- )
+	dup @ rot - swap !
+;
+
+:data bg-colors
+	0xFFFFFFAA
+	0xFFAAFFFF
+	0xFFFFAAFF
+	0xFFFFFFAA
+	0xFFAAFFAA
+	0xFFFFAAAA
+
+: raster-handler
+	239 for
+		i 6 mod dup dup
+		bg-colors + @ CL !
+		SX sub@
+		sync
+		SX add@
+	next
+;
 	
+
+: main
+	' raster-handler RV !
+
 	# init player sprite and grid state
 	8x8 93 156 116 player >sprite
 	grid grid-start  !
